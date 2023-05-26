@@ -1,6 +1,5 @@
 venv
 __pycache__
-keyring.db
-keyring2.db
-keyring.sqbpro
+keyring*.db
+keyring*.sqbpro
 .DS_STORE
