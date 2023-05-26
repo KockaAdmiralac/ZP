@@ -1,9 +1,8 @@
 from sys import path
 from PyQt6 import QtGui
 from PyQt6.QtWidgets import QDialog, QFileDialog, QMainWindow
+from lib.manage import create_key_pair
 from lib.keyring import Session
-
-from lib.manage import createKeyPair
 from .create import Ui_NewKeyPairDialog
 from .main import Ui_MainWindow
 from .send import Ui_SendMessageDialog
@@ -45,7 +44,7 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         algorithm = [KeyAlgorithms.RSA, KeyAlgorithms.DSAElGamal][self.keypairDialog.comboAlgorithm.currentIndex()]
         size = [1024, 2048][self.keypairDialog.comboSize.currentIndex()]
         password = self.keypairDialog.tbPassword.text()
-        createKeyPair(name, email, algorithm, size, password)
+        create_key_pair(name, email, algorithm, size, password)
         self.statusbar.showMessage(f'Created new key pair for {name} <{email}>', 3000)
 
     def importKeyPair(self):
