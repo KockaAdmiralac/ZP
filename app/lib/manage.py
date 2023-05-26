@@ -1,11 +1,10 @@
 import logging
+import traceback
 from Crypto.PublicKey import RSA, DSA
 from Crypto.PublicKey.RSA import RsaKey
 from Crypto.PublicKey.DSA import DsaKey
 from lib.models import PrivateKeyRing
 from lib import ElGamalKey, Key, KeyAlgorithms
-
-log = logging.getLogger(__name__)
 
 RSA_HEADERS = (b"-----BEGIN RSA PRIVATE KEY-----", b"-----END RSA PRIVATE KEY-----")
 DSA_ELGAMAL_HEADERS = (b"-----BEGIN PRIVATE KEY-----", b"-----END PRIVATE KEY-----", \
@@ -46,8 +45,18 @@ def create_key_pair(name: str, email: str, algorithm: KeyAlgorithms, size: int, 
     pem_public_key, pem_private_key = _new_key_pair_from_algorithm(algorithm=algorithm, bits=size, password=password)
     key_id = _extract_key_id(public_key=pem_public_key, algorithm=algorithm)
 
-    PrivateKeyRing.insert(keyID=key_id, name=name, publicKey=pem_public_key, enPrivateKey=pem_private_key, userID=email)
+    try:
+        PrivateKeyRing.insert(keyID=key_id, name=name, publicKey=pem_public_key, enPrivateKey=pem_private_key, userID=email)
+    except Exception as e:
+        logging.error("!!! An exception occurred while INSERTING: %s", str(e))
+        logging.error(traceback.format_exc())
+
 
 
 def delete_key_pair():
-    pass
+    try:
+        firstRow = PrivateKeyRing.getFirst()
+        PrivateKeyRing.delete_by_keyID(keyID=firstRow.keyID)
+    except Exception as e:
+        logging.error("!!! An exception occurred while DELETING: %s", str(e))
+        logging.error(traceback.format_exc())

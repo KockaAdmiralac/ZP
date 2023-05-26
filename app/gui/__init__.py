@@ -1,7 +1,7 @@
 from sys import path
 from PyQt6 import QtGui
 from PyQt6.QtWidgets import QDialog, QFileDialog, QMainWindow
-from lib.manage import create_key_pair
+from lib.manage import create_key_pair, delete_key_pair
 from lib.keyring import Session
 from .create import Ui_NewKeyPairDialog
 from .main import Ui_MainWindow
@@ -33,7 +33,7 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         self.keypairDialog = None
 
     def deleteKeyPair(self):
-        # deleteKeyPair(...)
+        delete_key_pair()
         self.statusbar.showMessage('Deleted key pair', 3000)
 
     def createKeyPair(self):

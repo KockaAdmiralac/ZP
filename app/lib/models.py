@@ -32,7 +32,6 @@ class PrivateKeyRing(Base):
             if instance:
                 session.delete(instance)
                 session.commit()
-                return True
         except Exception as e:
             session.rollback()
             raise e
@@ -40,6 +39,11 @@ class PrivateKeyRing(Base):
     @classmethod
     def getAll(cls) -> List['PrivateKeyRing']:
         instances = session.query(cls).all()
+        return instances
+    
+    @classmethod
+    def getFirst(cls) -> 'PrivateKeyRing':
+        instances = session.query(cls).first()
         return instances
 
 class PublicKeyRing(Base):
