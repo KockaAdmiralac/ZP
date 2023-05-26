@@ -2,7 +2,6 @@ from __future__ import annotations
 from os import urandom
 from typing import Optional, Tuple
 from Crypto.IO import PEM, PKCS8
-from Crypto.Math._IntegerGMP import IntegerGMP
 from Crypto.Math.Numbers import Integer
 from Crypto.Math.Primality import generate_probable_safe_prime, generate_probable_prime
 from Crypto.Util.asn1 import DerInteger, DerSequence
@@ -16,20 +15,20 @@ class ElGamalKey(object):
     def __init__(self, bits=1024, fast=True, params: Optional[Tuple[int, int, int]]=None):
         if params is not None:
             p, g, x = params
-            self.p = IntegerGMP(p)
-            self.g = IntegerGMP(g)
-            self.x = IntegerGMP(x)
+            self.p = Integer(p)
+            self.g = Integer(g)
+            self.x = Integer(x)
             self.y = pow(self.g, self.x, self.p)
             return
 
         randfunc = generate_probable_prime if fast else generate_probable_safe_prime
         # Generate a safe prime p
         # See Algorithm 4.86 in Handbook of Applied Cryptography
-        self.p: IntegerGMP = randfunc(exact_bits=bits)
+        self.p: Integer = randfunc(exact_bits=bits)
 
         # Generate generator g
         while 1:
-            self.g: IntegerGMP = pow(Integer.random_range(min_inclusive=2, max_exclusive=self.p), 2, self.p)
+            self.g: Integer = pow(Integer.random_range(min_inclusive=2, max_exclusive=self.p), 2, self.p)
             # We must avoid g=2 because of Bleichenbacher's attack described
             # in "Generating ElGamal signatures without knowning the secret key",
             # 1996
@@ -52,10 +51,10 @@ class ElGamalKey(object):
             break
 
         # Generate private key x
-        self.x: IntegerGMP = Integer.random_range(min_inclusive=2, max_exclusive=self.p - 1)
+        self.x: Integer = Integer.random_range(min_inclusive=2, max_exclusive=self.p - 1)
 
         # Generate public key y
-        self.y: IntegerGMP = pow(self.g, self.x, self.p)
+        self.y: Integer = pow(self.g, self.x, self.p)
 
     def encrypt(self, plaintext: bytes) -> tuple:
         M = bytes_to_long(plaintext)
