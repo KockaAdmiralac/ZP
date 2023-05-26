@@ -1,5 +1,6 @@
 from typing import List
 from sqlalchemy import TIMESTAMP, Column, Integer, String, func
+from lib import Key
 from lib.keyring import Session, Base
 
 session = Session()
@@ -14,13 +15,30 @@ class PrivateKeyRing(Base):
     enPrivateKey = Column(String, nullable=False)
     userID = Column(String, nullable=False)
 
+    def __init__(self, keyObj: Key = None, keyID=None, timestamp=None, name=None, publicKey=None, enPrivateKey=None, userID=None, **kwargs):
+        self._keyObj = keyObj
+        self.keyID = keyID
+        self.timestamp = timestamp
+        self.name = name
+        self.publicKey = publicKey
+        self.enPrivateKey = enPrivateKey
+        self.userID = userID
+        super().__init__(**kwargs)
+
+    @property
+    def keyObj(self) -> Key:
+        return self._keyObj
+
+    @keyObj.setter
+    def keyObj(self, value: Key):
+        self._keyObj = value
+
     @classmethod
-    def insert(cls, keyID, name, publicKey, enPrivateKey, userID):
+    def insert(cls, model: 'PrivateKeyRing'):
         try:
-            privateKeyRing = cls(keyID=keyID, name=name, publicKey=publicKey, enPrivateKey=enPrivateKey, userID=userID)
-            session.add(privateKeyRing)
+            session.add(model)
             session.commit()
-            return privateKeyRing
+            return model
         except Exception as e:
             session.rollback()
             raise e
@@ -37,14 +55,14 @@ class PrivateKeyRing(Base):
             raise e
     
     @classmethod
-    def getAll(cls) -> List['PrivateKeyRing']:
+    def get_all(cls) -> List['PrivateKeyRing']:
         instances = session.query(cls).all()
         return instances
     
     @classmethod
-    def getFirst(cls) -> 'PrivateKeyRing':
-        instances = session.query(cls).first()
-        return instances
+    def get_by_keyID(cls, keyID) -> 'PrivateKeyRing':
+        instance = session.query(cls).filter_by(keyID=keyID).first()
+        return instance
 
 class PublicKeyRing(Base):
     __tablename__ = 'PublicKeyRing'
@@ -58,15 +76,4 @@ class PublicKeyRing(Base):
     signature = Column(String, nullable=True)
     signatureTrust = Column(String, nullable=True)
 
-    @classmethod
-    def insert(cls, keyID, name, publicKey, ownerTrust, userID, keyLegitimacy, signature=None, signatureTrust=None):
-        publicKeyRing = cls(keyID=keyID, name=name, publicKey=publicKey, ownerTrust=ownerTrust, 
-                             userID=userID, keyLegitimacy=keyLegitimacy, signature=signature, signatureTrust=signatureTrust)
-        session.add(publicKeyRing)
-        session.commit()
-        return publicKeyRing
-    
-    @classmethod
-    def getAll(cls) -> List['PublicKeyRing']:
-        instances = session.query(cls).all()
-        return instances
+    # ... add methods

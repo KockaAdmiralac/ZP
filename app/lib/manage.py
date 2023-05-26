@@ -5,27 +5,29 @@ from Crypto.PublicKey.RSA import RsaKey
 from Crypto.PublicKey.DSA import DsaKey
 from lib.models import PrivateKeyRing
 from lib import ElGamalKey, Key, KeyAlgorithms
+from PyQt6.QtWidgets import QTableWidgetItem
 
 RSA_HEADERS = (b"-----BEGIN RSA PRIVATE KEY-----", b"-----END RSA PRIVATE KEY-----")
 DSA_ELGAMAL_HEADERS = (b"-----BEGIN PRIVATE KEY-----", b"-----END PRIVATE KEY-----", \
                        b"-----BEGIN PRIVATE KEY-----", b"-----END PRIVATE KEY-----")
 
 
-def _new_key_pair_from_algorithm(algorithm: KeyAlgorithms, bits: int, password: str) -> Key:
+def _new_key_pair_from_algorithm(algorithm: KeyAlgorithms, bits: int, password: str):
     if algorithm == KeyAlgorithms.RSA:
         rsa_key = RSA.generate(bits)
         pem_public_key = rsa_key.export_key()
         pem_private_key = rsa_key.export_key(passphrase=password)
-        return pem_public_key, pem_private_key
+        return rsa_key, pem_public_key, pem_private_key
     
     elif algorithm == KeyAlgorithms.DSAElGamal:
-        dsa_key, elgamal_key = DSA.generate(bits), ElGamalKey(bits)
+        key = DSA.generate(bits), ElGamalKey(bits)
+        dsa_key, elgamal_key = key
         pem_public_key = dsa_key.export_key() + b'\n' + elgamal_key.export_key()
 
         password_bytes = password.encode('utf-8')
         pem_private_key = dsa_key.export_key(passphrase=password) + b'\n' + \
                           elgamal_key.export_key(passphrase=password_bytes)
-        return pem_public_key, pem_private_key
+        return key, pem_public_key, pem_private_key
     
     raise ValueError('Unsupported key algorithm')
 
@@ -42,21 +44,39 @@ def _extract_key_id(public_key, algorithm: KeyAlgorithms):
 
 
 def create_key_pair(name: str, email: str, algorithm: KeyAlgorithms, size: int, password: str):
-    pem_public_key, pem_private_key = _new_key_pair_from_algorithm(algorithm=algorithm, bits=size, password=password)
+    key, pem_public_key, pem_private_key = _new_key_pair_from_algorithm(algorithm=algorithm, bits=size, password=password)
     key_id = _extract_key_id(public_key=pem_public_key, algorithm=algorithm)
 
     try:
-        PrivateKeyRing.insert(keyID=key_id, name=name, publicKey=pem_public_key, enPrivateKey=pem_private_key, userID=email)
+        private_key_ring = PrivateKeyRing(keyID=key_id, name=name, publicKey=pem_public_key, \
+                                          enPrivateKey=pem_private_key, userID=email, keyObj=key)
+        PrivateKeyRing.insert(private_key_ring)
     except Exception as e:
         logging.error("!!! An exception occurred while INSERTING: %s", str(e))
         logging.error(traceback.format_exc())
 
 
+def find_key_by_keyID(key_id: str) -> Key:
+    private_key_ring = PrivateKeyRing.get_by_keyID(keyID=key_id)
+    return private_key_ring.keyObj()
 
-def delete_key_pair():
+
+def delete_key_pair(key_id):
     try:
-        firstRow = PrivateKeyRing.getFirst()
-        PrivateKeyRing.delete_by_keyID(keyID=firstRow.keyID)
+        PrivateKeyRing.delete_by_keyID(keyID=key_id)
     except Exception as e:
         logging.error("!!! An exception occurred while DELETING: %s", str(e))
         logging.error(traceback.format_exc())
+
+
+def populate_private_keyring_table(table_private_keyring):
+    table_private_keyring.clearContents()
+    table_private_keyring.setRowCount(0)
+    result = PrivateKeyRing.get_all()
+    for index, key_pair in enumerate(result):
+        table_private_keyring.insertRow(index)
+
+        table_private_keyring.setItem(index, 0, QTableWidgetItem(str(key_pair.keyID)))
+        table_private_keyring.setItem(index, 1, QTableWidgetItem(str(key_pair.name)))
+        table_private_keyring.setItem(index, 2, QTableWidgetItem(str(key_pair.userID)))
+        table_private_keyring.setItem(index, 3, QTableWidgetItem(str(key_pair.timestamp)))
