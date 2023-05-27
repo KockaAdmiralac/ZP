@@ -1,14 +1,13 @@
 from sys import path
-from PyQt6 import QtGui
-from PyQt6.QtWidgets import QDialog, QFileDialog, QMainWindow, QTableWidgetItem
-from lib import Key
+from PyQt6.QtWidgets import QDialog, QFileDialog, QMainWindow, QMessageBox, QTableWidgetItem
+from lib import Key, KeyAlgorithms
 from lib.pem import import_key, export_key
 from lib.manage import create_key_pair, delete_key_pair, find_key_by_key_id, get_all_keys
 from lib.keyring import Session
+from traceback import format_exception
 from .create import Ui_NewKeyPairDialog
 from .main import Ui_MainWindow
 from .send import Ui_SendMessageDialog
-from lib import KeyAlgorithms
 
 path.append('..')
 
@@ -44,14 +43,16 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         return item.text()
     
     def deleteKeyPair(self):
-        message = "Deleted key pair"
         key_id = self.findSelectedKeyID()
         if key_id == -1:
-            message = "No key selected."
+            message = 'No key selected.'
         else:
-            message += f" with keyID {key_id}"
-            delete_key_pair(key_id=key_id)
-
+            message = f'Deleted key pair with ID {key_id}.'
+            try:
+                delete_key_pair(key_id=key_id)
+            except Exception as error:
+                self.showError('An error occurred while deleting a key pair.', error)
+                return
         self.statusbar.showMessage(message, 3000)
         self.populatePrivateKeyring()
 
@@ -63,9 +64,12 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         algorithm = [KeyAlgorithms.RSA, KeyAlgorithms.DSAElGamal][self.keypairDialog.comboAlgorithm.currentIndex()]
         size = [1024, 2048][self.keypairDialog.comboSize.currentIndex()]
         password = self.keypairDialog.tbPassword.text()
-        create_key_pair(name, email, algorithm, size, password)
-        self.statusbar.showMessage(f'Created new key pair for {name} <{email}>', 3000)
-        self.populatePrivateKeyring()
+        try:
+            create_key_pair(name, email, algorithm, size, password)
+            self.statusbar.showMessage(f'Created new key pair for {name} <{email}>', 3000)
+            self.populatePrivateKeyring()
+        except Exception as error:
+            self.showError('An error occurred while creating a key pair.', error)
 
     def populatePrivateKeyring(self):
         self.tablePrivateKeyring.clearContents()
@@ -109,7 +113,15 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         session = Session()
         session.close()
         return super().closeEvent(a0)
-    
+
+    def showError(self, message: str, error: Exception):
+        errorMsg = QMessageBox()
+        errorMsg.setIcon(QMessageBox.Icon.Critical)
+        errorMsg.setWindowTitle('Error')
+        errorMsg.setText(message)
+        errorMsg.setInformativeText(''.join(format_exception(error)))
+        errorMsg.exec()
+
 
 class SendMessageDialog(QDialog, Ui_SendMessageDialog):
     def __init__(self, parent=None):
