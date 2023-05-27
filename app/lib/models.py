@@ -68,4 +68,3 @@ class PublicKeyRing(Base):
     timestamp = Column(TIMESTAMP, nullable=False, default=func.now())
     public_key = Column(String, nullable=False)
     user_id = Column(String, nullable=False)
-    signature = Column(String, nullable=True)
