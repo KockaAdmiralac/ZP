@@ -1,6 +1,7 @@
 from typing import List
-from sqlalchemy import TIMESTAMP, Column, Integer, String, func
+from sqlalchemy import TIMESTAMP, Column, String, func
 from lib import Key
+from lib.pem import import_key_from_bytes
 from lib.keyring import Session, Base
 
 session = Session()
@@ -15,8 +16,7 @@ class PrivateKeyRing(Base):
     private_key = Column(String, nullable=False)
     user_id = Column(String, nullable=False)
 
-    def __init__(self, key_obj: Key, key_id, name, public_key, private_key, user_id, timestamp=None, **kwargs):
-        self._key_obj = key_obj
+    def __init__(self, key_id, name, public_key, private_key, user_id, timestamp=None, **kwargs):
         self.key_id = key_id
         self.timestamp = timestamp
         self.name = name
@@ -25,13 +25,11 @@ class PrivateKeyRing(Base):
         self.user_id = user_id
         super().__init__(**kwargs)
 
-    @property
-    def key_obj(self) -> Key:
-        return self.key_obj
+    def get_public_key_obj(self) -> Key:
+        return import_key_from_bytes(self.public_key.encode('utf-8'))
 
-    @key_obj.setter
-    def keyObj(self, value: Key):
-        self._key_obj = value
+    def get_private_key_obj(self, passphrase: str) -> Key:
+        return import_key_from_bytes(self.private_key.encode('utf-8'), passphrase)
 
     @classmethod
     def insert(cls, model: 'PrivateKeyRing'):
@@ -59,8 +57,8 @@ class PrivateKeyRing(Base):
         return session.query(cls).all()
     
     @classmethod
-    def get_by_key_id(cls, keyID) -> 'PrivateKeyRing':
-        instance = session.query(cls).filter_by(keyID=keyID).first()
+    def get_by_key_id(cls, key_id) -> 'PrivateKeyRing':
+        instance = session.query(cls).filter_by(key_id=key_id).first()
         return instance
 
 class PublicKeyRing(Base):

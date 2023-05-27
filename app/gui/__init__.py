@@ -98,8 +98,8 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         if key_id == -1:
             return
         else:
-            key: Key = find_key_by_key_id(key_id)
-            export_key(filename=pemFilename, key=key)
+            key = find_key_by_key_id(key_id)
+            export_key(filename=pemFilename, key=key.get_public_key_obj())
             self.statusbar.showMessage(f'Exported key pair to {pemFilename}', 3000)
 
     def sendMessage(self):

@@ -1,61 +1,47 @@
+from typing import List
 from Crypto.PublicKey import RSA, DSA
-from Crypto.PublicKey.RSA import RsaKey
-from Crypto.PublicKey.DSA import DsaKey
 from lib.models import PrivateKeyRing
+from lib.pem import export_key_to_bytes
 from lib import ElGamalKey, Key, KeyAlgorithms
 
-RSA_HEADERS = (b"-----BEGIN RSA PRIVATE KEY-----", b"-----END RSA PRIVATE KEY-----")
-DSA_ELGAMAL_HEADERS = (b"-----BEGIN PRIVATE KEY-----", b"-----END PRIVATE KEY-----", \
-                       b"-----BEGIN PRIVATE KEY-----", b"-----END PRIVATE KEY-----")
-
-
-def _new_key_pair_from_algorithm(algorithm: KeyAlgorithms, bits: int, password: str):
+def _new_key_pair_from_algorithm(algorithm: KeyAlgorithms, bits: int, passphrase: str):
     if algorithm == KeyAlgorithms.RSA:
-        rsa_key = RSA.generate(bits)
-        pem_public_key = rsa_key.export_key()
-        pem_private_key = rsa_key.export_key(passphrase=password)
-        return rsa_key, pem_public_key, pem_private_key
-    
+        private_key = RSA.generate(bits)
+        public_key = private_key.public_key()
     elif algorithm == KeyAlgorithms.DSAElGamal:
-        key = DSA.generate(bits), ElGamalKey(bits)
-        dsa_key, elgamal_key = key
-        pem_public_key = dsa_key.export_key() + b'\n' + elgamal_key.export_key()
+        private_key = DSA.generate(bits), ElGamalKey(bits)
+        dsa_key, elgamal_key = private_key
+        public_key = dsa_key.public_key(), elgamal_key.public_key()
 
-        password_bytes = password.encode('utf-8')
-        pem_private_key = dsa_key.export_key(passphrase=password) + b'\n' + \
-                          elgamal_key.export_key(passphrase=password_bytes)
-        return key, pem_public_key, pem_private_key
-    
-    raise ValueError('Unsupported key algorithm')
+    pem_public_key = export_key_to_bytes(public_key).decode('utf-8')
+    pem_private_key = export_key_to_bytes(private_key, passphrase).decode('utf-8')
+    return private_key, pem_public_key, pem_private_key
 
-
-def _extract_key_id(public_key, algorithm: KeyAlgorithms):
-    headers = RSA_HEADERS if algorithm == KeyAlgorithms.RSA else DSA_ELGAMAL_HEADERS
-    for header in headers:
-        public_key = public_key.replace(header, b"")
-    public_key = public_key.strip()
-
-    public_key_hex = public_key.hex()
-    key_id = public_key_hex[-16:]
-    return key_id
+# For a V3 key, the eight-octet Key ID consists of the low 64 bits of
+# the public modulus of the RSA key.
+# https://www.rfc-editor.org/rfc/rfc4880#section-12.2
+# https://github.com/mitchellrj/python-pgp/blob/62a3da/pgp/transferrable_keys.py#L328-L338
+def _extract_key_id(key: Key):
+    if isinstance(key, RSA.RsaKey):
+        return hex(key.n)[-16:]
+    else:
+        return hex(key[0].p)[-16:]
 
 
-def create_key_pair(name: str, email: str, algorithm: KeyAlgorithms, size: int, password: str):
-    key, pem_public_key, pem_private_key = _new_key_pair_from_algorithm(algorithm=algorithm, bits=size, password=password)
-    key_id = _extract_key_id(public_key=pem_public_key, algorithm=algorithm)
+def create_key_pair(name: str, email: str, algorithm: KeyAlgorithms, bits: int, passphrase: str):
+    key, pem_public_key, pem_private_key = _new_key_pair_from_algorithm(algorithm, bits, passphrase)
+    key_id = _extract_key_id(key)
 
     private_key_ring = PrivateKeyRing(key_id=key_id, name=name, public_key=pem_public_key, \
-                                        private_key=pem_private_key, user_id=email, key_obj=key)
+                                        private_key=pem_private_key, user_id=email)
     PrivateKeyRing.insert(private_key_ring)
 
 
-def find_key_by_key_id(key_id: str) -> Key:
-    private_key_ring = PrivateKeyRing.get_by_key_id(key_id)
-    return private_key_ring.key_obj
-
+def find_key_by_key_id(key_id: str) -> PrivateKeyRing:
+    return PrivateKeyRing.get_by_key_id(key_id)
 
 def delete_key_pair(key_id):
     PrivateKeyRing.delete_by_key_id(key_id)
 
-def get_all_keys():
+def get_all_keys() -> List[PrivateKeyRing]:
     return PrivateKeyRing.get_all()
