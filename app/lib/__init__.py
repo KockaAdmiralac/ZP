@@ -14,3 +14,4 @@ class KeyAlgorithms(Enum):
 class Cipher(Enum):
     AES128 = 1
     TripleDES = 2
+

@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 from Crypto.IO import PEM, PKCS8
 from Crypto.Math.Numbers import Integer
 from Crypto.Math.Primality import generate_probable_safe_prime, generate_probable_prime
-from Crypto.Util.asn1 import DerInteger, DerSequence
+from Crypto.Util.asn1 import DerBitString, DerInteger, DerNull, DerObjectId, DerSequence
 from Crypto.Util.number import bytes_to_long, long_to_bytes
 from Crypto.Util.py3compat import tobytes, tostr
 
@@ -12,13 +12,17 @@ from Crypto.Util.py3compat import tobytes, tostr
 # ElGamal encryption from pycrypto and defining our own PEM export
 # procedure (based on DSA export to PEM from pycryptodome).
 class ElGamalKey(object):
-    def __init__(self, bits=1024, fast=True, params: Optional[Tuple[int, int, int]]=None):
+    def __init__(self, bits=1024, fast=True, params: Optional[Tuple[int, int, int]]=None, is_public=False):
         if params is not None:
-            p, g, x = params
+            p, g, xy = params
             self.p = Integer(p)
             self.g = Integer(g)
-            self.x = Integer(x)
-            self.y = pow(self.g, self.x, self.p)
+            if is_public:
+                self.x = None
+                self.y = Integer(xy)
+            else:
+                self.x = Integer(xy)
+                self.y = pow(self.g, self.x, self.p)
             return
 
         randfunc = generate_probable_prime if fast else generate_probable_safe_prime
@@ -51,7 +55,7 @@ class ElGamalKey(object):
             break
 
         # Generate private key x
-        self.x: Integer = Integer.random_range(min_inclusive=2, max_exclusive=self.p - 1)
+        self.x: Optional[Integer] = Integer.random_range(min_inclusive=2, max_exclusive=self.p - 1)
 
         # Generate public key y
         self.y: Integer = pow(self.g, self.x, self.p)
@@ -64,6 +68,8 @@ class ElGamalKey(object):
         return (int(a), int(b))
 
     def decrypt(self, ciphertext: tuple) -> bytes:
+        if self.x is None:
+            raise ValueError('ElGamal decryption with public key is not supported.')
         r = Integer.random_range(min_inclusive=2, max_exclusive=self.p-1)
         a_blind = (pow(self.g, r, self.p) * ciphertext[0]) % self.p
         ax = pow(a_blind, self.x, self.p)
@@ -72,10 +78,16 @@ class ElGamalKey(object):
         return long_to_bytes(int(plaintext))
 
     def export_key(self, passphrase: Optional[bytes] = None) -> bytes:
-        private_key = DerInteger(self.x).encode()
-        params = DerSequence([self.p, self.g])
-        binary_key = PKCS8.wrap(private_key, oid, passphrase, key_params=params)
-        key_type = 'ENCRYPTED PRIVATE KEY' if passphrase else 'PRIVATE KEY'
+        if self.x is None:
+            algorithm = DerSequence([DerObjectId(oid), DerNull()])
+            params = DerSequence([self.p, self.g, self.y])
+            binary_key = DerSequence([algorithm, DerBitString(params)]).encode()
+            key_type = 'PUBLIC KEY'
+        else:
+            private_key = DerInteger(self.x).encode()
+            params = DerSequence([self.p, self.g])
+            binary_key = PKCS8.wrap(private_key, oid, passphrase, key_params=params)
+            key_type = 'ENCRYPTED PRIVATE KEY' if passphrase else 'PRIVATE KEY'
         pem_str = PEM.encode(binary_key, key_type, passphrase)
         return tobytes(pem_str)
 
@@ -84,14 +96,24 @@ class ElGamalKey(object):
         (der, marker, enc_flag) = PEM.decode(tostr(contents), passphrase)
         if enc_flag:
             passphrase = None
-        decoded_oid, private_key_bytes, params_bytes = PKCS8.unwrap(der, passphrase)
+        is_public = contents.startswith(b'----BEGIN PUBLIC KEY') or passphrase is None
+        if is_public:
+            algo_encoded, params_encoded = DerSequence().decode(der, nr_elements=2)
+            algo_oid_encoded = DerSequence().decode(algo_encoded, nr_elements=(1, 2))[0]
+            decoded_oid = DerObjectId().decode(algo_oid_encoded).value
+            p, g, xy = list(DerSequence().decode(DerBitString().decode(params_encoded).value))
+        else:
+            decoded_oid, private_key_bytes, params_bytes = PKCS8.unwrap(der, passphrase)
+            if params_bytes is None:
+                raise ValueError('Invalid ElGamal key encoding')
+            xy = DerInteger().decode(private_key_bytes).value
+            p, g = list(DerSequence().decode(params_bytes))
         if decoded_oid != oid:
             raise ValueError('No PKCS#8 encoded ElGamal key')
-        if params_bytes is None:
-            raise ValueError('Invalid ElGamal key encoding')
-        x = DerInteger().decode(private_key_bytes).value
-        p, g = list(DerSequence().decode(params_bytes))
-        return ElGamalKey(params=(p, g, x))
+        return ElGamalKey(params=(p, g, xy), is_public=is_public)
 
-# OID for an RSA key because there isn't one for ElGamal
-oid = '1.2.840.113549.1.1.1'
+    def public_key(self) -> ElGamalKey:
+        return ElGamalKey(params=(self.p, self.g, self.y), is_public=True)
+
+# http://oid-info.com/get/1.3.14.7.2.1.1
+oid = '1.3.14.7.2.1.1'

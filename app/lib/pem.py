@@ -1,24 +1,31 @@
+from typing import Optional
 from Crypto.PublicKey import RSA, DSA
 from . import Key
 from .elgamal import ElGamalKey
 
-def export_key(filename: str, key: Key):
-    with open(filename, 'wb') as pem_file:
-        if isinstance(key, RSA.RsaKey):
-            pem_file.write(key.export_key())
-        else:
-            dsa_key, elgamal_key = key
-            pem_file.write(dsa_key.export_key())
-            pem_file.write(b'\n')
-            pem_file.write(elgamal_key.export_key())
+def export_key_to_bytes(key: Key, passphrase: Optional[str] = None) -> bytes:
+    if isinstance(key, RSA.RsaKey):
+        return key.export_key(passphrase=passphrase)
+    else:
+        dsa_key, elgamal_key = key
+        passphrase_bytes = None if passphrase is None else passphrase.encode('utf-8')
+        return dsa_key.export_key(passphrase=passphrase) + b'\n' + elgamal_key.export_key(passphrase_bytes)
 
-def import_key(filename: str) -> Key:
+def export_key(filename: str, key: Key, passphrase: Optional[str] = None):
+    with open(filename, 'wb') as pem_file:
+        pem_file.write(export_key_to_bytes(key, passphrase))
+
+def import_key_from_bytes(contents: bytes, passphrase: Optional[str] = None) -> Key:
+    two_keys = contents.split(b'---\n---')
+    if len(two_keys) == 1:
+        return RSA.import_key(contents, passphrase)
+    else:
+        dsa_part, elgamal_part = two_keys
+        dsa_contents = dsa_part + b'---'
+        elgamal_contents = b'---' + elgamal_part
+        passphrase_bytes = None if passphrase is None else passphrase.encode('utf-8')
+        return (DSA.import_key(dsa_contents, passphrase), ElGamalKey.import_key(elgamal_contents, passphrase_bytes))
+
+def import_key(filename: str, passphrase: Optional[str] = None) -> Key:
     with open(filename, 'rb') as pem_file:
-        contents = pem_file.read()
-        if contents.startswith(b'-----BEGIN RSA PRIVATE KEY'):
-            return RSA.import_key(contents)
-        else:
-            dsa_part, elgamal_part = contents.split(b'---\n---')
-            dsa_contents = dsa_part + b'---'
-            elgamal_contents = b'---' + elgamal_part
-            return (DSA.import_key(dsa_contents), ElGamalKey.import_key(elgamal_contents))
+        return import_key_from_bytes(pem_file.read(), passphrase)

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>511</width>
-    <height>348</height>
+    <width>594</width>
+    <height>505</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
       <x>10</x>
       <y>10</y>
       <width>231</width>
-      <height>251</height>
+      <height>151</height>
      </rect>
     </property>
     <item>
@@ -74,7 +74,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>270</y>
+      <y>170</y>
       <width>51</width>
       <height>25</height>
      </rect>
@@ -87,7 +87,7 @@
     <property name="geometry">
      <rect>
       <x>130</x>
-      <y>270</y>
+      <y>170</y>
       <width>51</width>
       <height>25</height>
      </rect>
@@ -100,7 +100,7 @@
     <property name="geometry">
      <rect>
       <x>190</x>
-      <y>270</y>
+      <y>170</y>
       <width>51</width>
       <height>25</height>
      </rect>
@@ -182,7 +182,7 @@
     <property name="geometry">
      <rect>
       <x>70</x>
-      <y>270</y>
+      <y>170</y>
       <width>51</width>
       <height>25</height>
      </rect>
@@ -191,13 +191,56 @@
      <string>Delete</string>
     </property>
    </widget>
+   <widget class="QTableWidget" name="tablePrivateKeyring">
+    <property name="geometry">
+     <rect>
+      <x>70</x>
+      <y>240</y>
+      <width>441</width>
+      <height>192</height>
+     </rect>
+    </property>
+    <column>
+     <property name="text">
+      <string>KeyID</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Name</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>User email</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Created at</string>
+     </property>
+    </column>
+   </widget>
+   <widget class="QLabel" name="_l4">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>210</y>
+      <width>101</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:700;&quot;&gt;PRIVATE KEYRING&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>511</width>
+     <width>594</width>
      <height>22</height>
     </rect>
    </property>
