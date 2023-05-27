@@ -1,4 +1,5 @@
 from sys import path
+from typing import Optional
 from PyQt6.QtWidgets import QDialog, QFileDialog, QMainWindow, QMessageBox, QTableWidgetItem
 from lib import Key, KeyAlgorithms
 from lib.pem import import_key, export_key
@@ -7,6 +8,7 @@ from lib.keyring import Session
 from traceback import format_exception
 from .create import Ui_NewKeyPairDialog
 from .main import Ui_MainWindow
+from .passphrase import Ui_PassphraseDialog
 from .send import Ui_SendMessageDialog
 
 path.append('..')
@@ -17,6 +19,7 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.connect()
         self.populatePrivateKeyring()
+        self.passphrase = None
 
     def connect(self):
         self.buttonNew.clicked.connect(self.newKeyPair)
@@ -86,21 +89,35 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         pemFilename, _ = QFileDialog.getOpenFileName(self, 'Select PEM file to import', filter='PEM files (*.pem)')
         if pemFilename == '':
             return
-        import_key(filename=pemFilename)
+        passphrase = self.enterPassphrase()
+        if passphrase is None:
+            # User cancelled action.
+            return
+        import_key(pemFilename, None if passphrase == '' else passphrase)
         self.statusbar.showMessage(f'Imported key pair from {pemFilename}', 3000)
 
     def exportKeyPair(self):
+        key_id = self.findSelectedKeyID()
+        if key_id == -1:
+            self.statusbar.showMessage('Ne key selected.', 3000)
+            return
         pemFilename, _ = QFileDialog.getSaveFileName(self, 'Select the location for your exported keys', filter='PEM files (*.pem)')
         if pemFilename == '':
             return
-        
-        key_id = self.findSelectedKeyID()
-        if key_id == -1:
+        passphrase = self.enterPassphrase()
+        if passphrase is None:
+            # User cancelled action.
             return
-        else:
-            key = find_key_by_key_id(key_id)
-            export_key(filename=pemFilename, key=key.get_public_key_obj())
+        key = find_key_by_key_id(key_id)
+        try:
+            if passphrase == '':
+                export_key(pemFilename, key.get_public_key_obj())
+            else:
+                # TODO: Export with a different passphrase? Export with no passphrase?
+                export_key(pemFilename, key.get_private_key_obj(passphrase), passphrase)
             self.statusbar.showMessage(f'Exported key pair to {pemFilename}', 3000)
+        except Exception as error:
+            self.showError('Exporting key failed. Check whether the passphrase you entered is correct.', error)
 
     def sendMessage(self):
         dialog = SendMessageDialog(self)
@@ -122,6 +139,18 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         errorMsg.setInformativeText(''.join(format_exception(error)))
         errorMsg.exec()
 
+    def enterPassphrase(self) -> Optional[str]:
+        self.passphraseDialog = PassphraseDialog()
+        self.passphraseDialog.accepted.connect(self.enteredPassphrase)
+        self.passphraseDialog.exec()
+        self.passphraseDialog = None
+        passphrase = self.passphrase
+        self.passphrase = None
+        return passphrase
+
+    def enteredPassphrase(self):
+        if self.passphraseDialog is not None:
+            self.passphrase = self.passphraseDialog.tbPassphrase.text()
 
 class SendMessageDialog(QDialog, Ui_SendMessageDialog):
     def __init__(self, parent=None):
@@ -129,6 +158,11 @@ class SendMessageDialog(QDialog, Ui_SendMessageDialog):
         self.setupUi(self)
 
 class NewKeyPairDialog(QDialog, Ui_NewKeyPairDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)
+
+class PassphraseDialog(QDialog, Ui_PassphraseDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)

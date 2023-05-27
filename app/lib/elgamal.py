@@ -94,8 +94,8 @@ class ElGamalKey(object):
     @staticmethod
     def import_key(contents: bytes, passphrase: Optional[bytes] = None) -> ElGamalKey:
         (der, marker, enc_flag) = PEM.decode(tostr(contents), passphrase)
-        if enc_flag:
-            passphrase = None
+        # if enc_flag:
+        #     passphrase = None
         is_public = contents.startswith(b'----BEGIN PUBLIC KEY') or passphrase is None
         if is_public:
             algo_encoded, params_encoded = DerSequence().decode(der, nr_elements=2)
