@@ -47,22 +47,22 @@ def create_key_pair(name: str, email: str, algorithm: KeyAlgorithms, size: int, 
     key_id = _extract_key_id(public_key=pem_public_key, algorithm=algorithm)
 
     try:
-        private_key_ring = PrivateKeyRing(keyID=key_id, name=name, publicKey=pem_public_key, \
-                                          enPrivateKey=pem_private_key, userID=email, keyObj=key)
+        private_key_ring = PrivateKeyRing(key_id=key_id, name=name, public_key=pem_public_key, \
+                                          private_key=pem_private_key, user_id=email, key_obj=key)
         PrivateKeyRing.insert(private_key_ring)
     except Exception as e:
         logging.error("!!! An exception occurred while INSERTING: %s", str(e))
         logging.error(traceback.format_exc())
 
 
-def find_key_by_keyID(key_id: str) -> Key:
-    private_key_ring = PrivateKeyRing.get_by_keyID(keyID=key_id)
-    return private_key_ring.keyObj()
+def find_key_by_key_id(key_id: str) -> Key:
+    private_key_ring = PrivateKeyRing.get_by_key_id(key_id)
+    return private_key_ring.key_obj
 
 
 def delete_key_pair(key_id):
     try:
-        PrivateKeyRing.delete_by_keyID(keyID=key_id)
+        PrivateKeyRing.delete_by_key_id(key_id)
     except Exception as e:
         logging.error("!!! An exception occurred while DELETING: %s", str(e))
         logging.error(traceback.format_exc())

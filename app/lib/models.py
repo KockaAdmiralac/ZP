@@ -6,32 +6,32 @@ from lib.keyring import Session, Base
 session = Session()
 
 class PrivateKeyRing(Base):
-    __tablename__ = 'PrivateKeyRing'
+    __tablename__ = 'private_key_ring'
 
-    keyID = Column(String, primary_key=True)
+    key_id = Column(String, primary_key=True)
     timestamp = Column(TIMESTAMP, nullable=False, default=func.now())
     name = Column(String, nullable=False)
-    publicKey = Column(String, nullable=False)
-    enPrivateKey = Column(String, nullable=False)
-    userID = Column(String, nullable=False)
+    public_key = Column(String, nullable=False)
+    private_key = Column(String, nullable=False)
+    user_id = Column(String, nullable=False)
 
-    def __init__(self, keyObj: Key = None, keyID=None, timestamp=None, name=None, publicKey=None, enPrivateKey=None, userID=None, **kwargs):
-        self._keyObj = keyObj
-        self.keyID = keyID
+    def __init__(self, key_obj: Key, key_id, name, public_key, private_key, user_id, timestamp=None, **kwargs):
+        self._key_obj = key_obj
+        self.key_id = key_id
         self.timestamp = timestamp
         self.name = name
-        self.publicKey = publicKey
-        self.enPrivateKey = enPrivateKey
-        self.userID = userID
+        self.public_key = public_key
+        self.private_key = private_key
+        self.user_id = user_id
         super().__init__(**kwargs)
 
     @property
-    def keyObj(self) -> Key:
-        return self._keyObj
+    def key_obj(self) -> Key:
+        return self.key_obj
 
-    @keyObj.setter
+    @key_obj.setter
     def keyObj(self, value: Key):
-        self._keyObj = value
+        self._key_obj = value
 
     @classmethod
     def insert(cls, model: 'PrivateKeyRing'):
@@ -44,9 +44,9 @@ class PrivateKeyRing(Base):
             raise e
     
     @classmethod
-    def delete_by_keyID(cls, keyID):
+    def delete_by_key_id(cls, key_id):
         try:
-            instance = session.query(cls).filter_by(keyID=keyID).first()
+            instance = session.query(cls).filter_by(key_id=key_id).first()
             if instance:
                 session.delete(instance)
                 session.commit()
@@ -56,24 +56,18 @@ class PrivateKeyRing(Base):
     
     @classmethod
     def get_all(cls) -> List['PrivateKeyRing']:
-        instances = session.query(cls).all()
-        return instances
+        return session.query(cls).all()
     
     @classmethod
-    def get_by_keyID(cls, keyID) -> 'PrivateKeyRing':
+    def get_by_key_id(cls, keyID) -> 'PrivateKeyRing':
         instance = session.query(cls).filter_by(keyID=keyID).first()
         return instance
 
 class PublicKeyRing(Base):
-    __tablename__ = 'PublicKeyRing'
+    __tablename__ = 'public_key_ring'
 
-    keyID = Column(String, primary_key=True)
+    key_id = Column(String, primary_key=True)
     timestamp = Column(TIMESTAMP, nullable=False, default=func.now())
-    publicKey = Column(String, nullable=False)
-    ownerTrust = Column(Integer, nullable=False)
-    userID = Column(String, nullable=False)
-    keyLegitimacy = Column(Integer, nullable=False)
+    public_key = Column(String, nullable=False)
+    user_id = Column(String, nullable=False)
     signature = Column(String, nullable=True)
-    signatureTrust = Column(String, nullable=True)
-
-    # ... add methods

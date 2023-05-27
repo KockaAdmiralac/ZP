@@ -2,9 +2,8 @@ from sys import path
 from PyQt6 import QtGui
 from PyQt6.QtWidgets import QDialog, QFileDialog, QMainWindow, QTableWidgetItem
 from lib import Key
-from lib.manage import find_key_by_keyID, get_all_keys
 from lib.pem import import_key, export_key
-from lib.manage import create_key_pair, delete_key_pair, find_key_by_keyID
+from lib.manage import create_key_pair, delete_key_pair, find_key_by_key_id, get_all_keys
 from lib.keyring import Session
 from .create import Ui_NewKeyPairDialog
 from .main import Ui_MainWindow
@@ -36,21 +35,17 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         self.keypairDialog.exec()
         self.keypairDialog = None
 
-    def _find_selected_key_id(self):
-        selected_items = self.tablePrivateKeyring.selectedItems()
-        found = -1
-        key_id_column = 0
-        if selected_items:
-            selected_row = selected_items[0].row()
-            item = self.tablePrivateKeyring.item(selected_row, key_id_column)
-            if item:
-                key_id = item.text()
-                return key_id
-        return found
+    def findSelectedKeyID(self):
+        selectedItems = self.tablePrivateKeyring.selectedItems()
+        if len(selectedItems) == 0:
+            return -1
+        selectedRow = selectedItems[0].row()
+        item = self.tablePrivateKeyring.item(selectedRow, 0)
+        return item.text()
     
     def deleteKeyPair(self):
         message = "Deleted key pair"
-        key_id = self._find_selected_key_id()
+        key_id = self.findSelectedKeyID()
         if key_id == -1:
             message = "No key selected."
         else:
@@ -78,9 +73,9 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         private_keys = get_all_keys()
         for index, key_pair in enumerate(private_keys):
             self.tablePrivateKeyring.insertRow(index)
-            self.tablePrivateKeyring.setItem(index, 0, QTableWidgetItem(str(key_pair.keyID)))
+            self.tablePrivateKeyring.setItem(index, 0, QTableWidgetItem(str(key_pair.key_id)))
             self.tablePrivateKeyring.setItem(index, 1, QTableWidgetItem(str(key_pair.name)))
-            self.tablePrivateKeyring.setItem(index, 2, QTableWidgetItem(str(key_pair.userID)))
+            self.tablePrivateKeyring.setItem(index, 2, QTableWidgetItem(str(key_pair.user_id)))
             self.tablePrivateKeyring.setItem(index, 3, QTableWidgetItem(str(key_pair.timestamp)))
 
     def importKeyPair(self):
@@ -95,11 +90,11 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         if pemFilename == '':
             return
         
-        key_id = self._find_selected_key_id()
+        key_id = self.findSelectedKeyID()
         if key_id == -1:
             return
         else:
-            key: Key = find_key_by_keyID(key_id)
+            key: Key = find_key_by_key_id(key_id)
             export_key(filename=pemFilename, key=key)
             self.statusbar.showMessage(f'Exported key pair to {pemFilename}', 3000)
 
