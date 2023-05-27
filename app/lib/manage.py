@@ -5,7 +5,6 @@ from Crypto.PublicKey.RSA import RsaKey
 from Crypto.PublicKey.DSA import DsaKey
 from lib.models import PrivateKeyRing
 from lib import ElGamalKey, Key, KeyAlgorithms
-from PyQt6.QtWidgets import QTableWidgetItem
 
 RSA_HEADERS = (b"-----BEGIN RSA PRIVATE KEY-----", b"-----END RSA PRIVATE KEY-----")
 DSA_ELGAMAL_HEADERS = (b"-----BEGIN PRIVATE KEY-----", b"-----END PRIVATE KEY-----", \
@@ -68,15 +67,5 @@ def delete_key_pair(key_id):
         logging.error("!!! An exception occurred while DELETING: %s", str(e))
         logging.error(traceback.format_exc())
 
-
-def populate_private_keyring_table(table_private_keyring):
-    table_private_keyring.clearContents()
-    table_private_keyring.setRowCount(0)
-    result = PrivateKeyRing.get_all()
-    for index, key_pair in enumerate(result):
-        table_private_keyring.insertRow(index)
-
-        table_private_keyring.setItem(index, 0, QTableWidgetItem(str(key_pair.keyID)))
-        table_private_keyring.setItem(index, 1, QTableWidgetItem(str(key_pair.name)))
-        table_private_keyring.setItem(index, 2, QTableWidgetItem(str(key_pair.userID)))
-        table_private_keyring.setItem(index, 3, QTableWidgetItem(str(key_pair.timestamp)))
+def get_all_keys():
+    return PrivateKeyRing.get_all()

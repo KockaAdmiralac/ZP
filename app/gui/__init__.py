@@ -2,9 +2,9 @@ from sys import path
 from PyQt6 import QtGui
 from PyQt6.QtWidgets import QDialog, QFileDialog, QMainWindow, QTableWidgetItem
 from lib import Key
-from lib.manage import find_key_by_keyID
+from lib.manage import find_key_by_keyID, get_all_keys
 from lib.pem import import_key, export_key
-from lib.manage import create_key_pair, delete_key_pair, populate_private_keyring_table, find_key_by_keyID
+from lib.manage import create_key_pair, delete_key_pair, find_key_by_keyID
 from lib.keyring import Session
 from .create import Ui_NewKeyPairDialog
 from .main import Ui_MainWindow
@@ -73,7 +73,15 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         self.populatePrivateKeyring()
 
     def populatePrivateKeyring(self):
-        populate_private_keyring_table(self.tablePrivateKeyring)
+        self.tablePrivateKeyring.clearContents()
+        self.tablePrivateKeyring.setRowCount(0)
+        private_keys = get_all_keys()
+        for index, key_pair in enumerate(private_keys):
+            self.tablePrivateKeyring.insertRow(index)
+            self.tablePrivateKeyring.setItem(index, 0, QTableWidgetItem(str(key_pair.keyID)))
+            self.tablePrivateKeyring.setItem(index, 1, QTableWidgetItem(str(key_pair.name)))
+            self.tablePrivateKeyring.setItem(index, 2, QTableWidgetItem(str(key_pair.userID)))
+            self.tablePrivateKeyring.setItem(index, 3, QTableWidgetItem(str(key_pair.timestamp)))
 
     def importKeyPair(self):
         pemFilename, _ = QFileDialog.getOpenFileName(self, 'Select PEM file to import', filter='PEM files (*.pem)')
