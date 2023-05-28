@@ -15,7 +15,7 @@ from zlib import compress, decompress
 MessageHeaders = Dict[str, Optional[str]]
 
 class Message:
-    def __init__(self, message: str, compress: bool, base64: bool, public_key: Optional[Key], public_key_id: Optional[str], cipher: Optional[Cipher], private_key: Optional[Key], private_key_id: Optional[str]):
+    def __init__(self, message: str, compress: bool, base64: bool, public_key: Optional[Key], public_key_id: Optional[str], cipher: Optional[Cipher], private_key: Optional[Key], private_key_id: Optional[str], verification: Optional[bool]):
         self.message: str = message
         self.compress: bool = compress
         self.base64: bool = base64
@@ -34,6 +34,7 @@ class Message:
                 self.signing_key = private_key
             else:
                 self.signing_key = private_key[0]
+        self.verification: Optional[bool] = verification
 
     @staticmethod
     def format_headers(headers: MessageHeaders) -> bytes:
@@ -174,7 +175,7 @@ class Message:
             file.write(encoded_message)
 
     @staticmethod
-    def read(filename: str, passphrase: Optional[str] = None):
+    def read(filename: str, passphrase: Optional[str] = None) -> 'Message':
         with open(filename, 'rb') as file:
             headers = Message.read_headers(file)
             encryption_key_id = headers.get('Encryption-Key-Id')
@@ -237,4 +238,6 @@ class Message:
             timestamp = raw_headers['Timestamp']
             message = message_with_raw_headers.read().decode('utf-8')
             print(timestamp, message, verification)
-            # TODO: Return new Message object with relevant data
+            return_message = Message(message=message, compress=is_compressed, base64=is_base64, public_key=encryption_key, public_key_id=encryption_key_id, \
+                                 cipher=cipher, private_key=session_key, private_key_id=None, verification=verification) # TODO sta za private_key_id
+            return return_message

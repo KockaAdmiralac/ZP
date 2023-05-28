@@ -174,7 +174,14 @@ class ZPApp(QMainWindow, Ui_MainWindow):
             self.showError('Sending message failed. Check whether the passphrase you entered is correct.', error)
 
     def receiveMessage(self):
-        pass
+        messageFilename, _ = QFileDialog.getOpenFileName(self, 'Select MSG file to import', filter='MSG files (*.msg)')
+        if messageFilename == '':
+            return
+        passphrase = self.enterPassphrase()
+        if passphrase is None:
+            self.statusbar.showMessage(f'User passphrase dialog for receive message.', 3000)
+            return
+        print(Message.read(filename=messageFilename, passphrase=passphrase))
 
     def closeEvent(self, a0) -> None:
         session = Session()
@@ -217,7 +224,8 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         if self.otherKeyAttributesDialog is not None:
             self.passphrase = self.otherKeyAttributesDialog.tbPassphrase.text()
             self.name = self.otherKeyAttributesDialog.tbKeyName.text()
-            self.email = self.otherKeyAttributesDialog.tbKeyEmail.text()
+            self.email = self.otherKeyAttributesDialog.tbKeyEmail.text()        
+        
 
 class SendMessageDialog(QDialog, Ui_SendMessageDialog):
     def __init__(self, parent=None):
@@ -265,8 +273,6 @@ class SendMessageDialog(QDialog, Ui_SendMessageDialog):
             privateKeyId = str(privateKeyData.key_id)
         msg = Message(message, doCompress, doBase64, publicKey, publicKeyId, cipher, privateKey, privateKeyId)
         msg.write(messageFilename)
-        # TODO:
-        print(Message.read(messageFilename, '123'))
 
 class NewKeyPairDialog(QDialog, Ui_NewKeyPairDialog):
     def __init__(self, parent=None):

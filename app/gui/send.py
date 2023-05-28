@@ -88,7 +88,7 @@ class Ui_SendMessageDialog(object):
         self.comboEncryptionKey.setItemText(1, _translate("SendMessageDialog", "PuK2"))
         self._l3.setText(_translate("SendMessageDialog", "Encryption key:"))
         self.comboEncryptionAlgorithm.setItemText(0, _translate("SendMessageDialog", "AES-128"))
-        self.comboEncryptionAlgorithm.setItemText(1, _translate("SendMessageDialog", "IDEA"))
+        self.comboEncryptionAlgorithm.setItemText(1, _translate("SendMessageDialog", "Triple DES"))
         self._l4.setText(_translate("SendMessageDialog", "Encryption algorithm:"))
         self._l5.setText(_translate("SendMessageDialog", "Signing passphrase:"))
 
