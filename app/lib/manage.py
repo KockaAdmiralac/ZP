@@ -1,6 +1,6 @@
 from typing import List
 from Crypto.PublicKey import RSA, DSA
-from lib.models import PrivateKeyRing
+from lib.models import PrivateKeyRing, PublicKeyRing
 from lib.pem import export_key_to_bytes
 from lib import ElGamalKey, Key, KeyAlgorithms
 
@@ -32,16 +32,46 @@ def create_key_pair(name: str, email: str, algorithm: KeyAlgorithms, bits: int, 
     key, pem_public_key, pem_private_key = _new_key_pair_from_algorithm(algorithm, bits, passphrase)
     key_id = _extract_key_id(key)
 
+    algorithm_str = "RSA" if algorithm == KeyAlgorithms.RSA else "DSA+ElGamal"
+
     private_key_ring = PrivateKeyRing(key_id=key_id, name=name, public_key=pem_public_key, \
-                                        private_key=pem_private_key, user_id=email)
+                                        private_key=pem_private_key, user_id=email, algorithm=algorithm_str)
+    
+    public_key_ring = PublicKeyRing(key_id=key_id, name=name, public_key=pem_public_key, \
+                                    user_id=email, algorithm=algorithm_str)
     PrivateKeyRing.insert(private_key_ring)
+    PublicKeyRing.insert(public_key_ring)
 
 
 def find_key_by_key_id(key_id: str) -> PrivateKeyRing:
     return PrivateKeyRing.get_by_key_id(key_id)
 
 def delete_key_pair(key_id):
-    PrivateKeyRing.delete_by_key_id(key_id)
+    PrivateKeyRing.delete_by_key_id(key_id=key_id)
+    PublicKeyRing.delete_by_key_id(key_id=key_id)
 
-def get_all_keys() -> List[PrivateKeyRing]:
+def get_all_keys_from_private_keyring() -> List[PrivateKeyRing]:
     return PrivateKeyRing.get_all()
+
+def get_all_keys_from_public_keyring() -> List[PublicKeyRing]:
+    return PublicKeyRing.get_all()
+
+def insert_imported_key(key: Key, name: str, email: str, passphrase: str):
+    if isinstance(key, RSA.RsaKey):
+        algorithm_str = "RSA"
+        public_key = key.public_key()
+    else:
+        algorithm_str = "DSA+ElGamal"
+        dsa_key, elgamal_key = key
+        public_key = dsa_key.public_key(), elgamal_key.public_key()
+
+    pem_public_key = export_key_to_bytes(public_key).decode('utf-8')
+    public_key_ring = PublicKeyRing(key_id=_extract_key_id(key), name=name, public_key=pem_public_key, \
+                                    user_id=email, algorithm=algorithm_str)
+    PublicKeyRing.insert(public_key_ring)
+   
+    if passphrase != "":
+        pem_private_key = export_key_to_bytes(key, passphrase).decode('utf-8')
+        private_key_ring = PrivateKeyRing(key_id=_extract_key_id(key), name=name, public_key=pem_public_key, \
+                                        private_key=pem_private_key, user_id=email, algorithm=algorithm_str)
+        PrivateKeyRing.insert(private_key_ring)
