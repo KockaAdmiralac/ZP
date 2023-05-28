@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>594</width>
-    <height>515</height>
+    <width>515</width>
+    <height>496</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -126,6 +126,9 @@
       <height>25</height>
      </rect>
     </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
    </widget>
    <widget class="QLabel" name="_l1">
     <property name="geometry">
@@ -162,6 +165,9 @@
       <height>25</height>
      </rect>
     </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
    </widget>
    <widget class="QLabel" name="_l3">
     <property name="geometry">
@@ -185,6 +191,9 @@
       <height>25</height>
      </rect>
     </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
    </widget>
    <widget class="QPushButton" name="buttonDelete">
     <property name="geometry">
@@ -207,6 +216,9 @@
       <width>151</width>
       <height>25</height>
      </rect>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
     </property>
    </widget>
    <widget class="QLabel" name="_l4">
@@ -234,6 +246,9 @@
     <property name="text">
      <string/>
     </property>
+    <property name="readOnly">
+     <bool>true</bool>
+    </property>
    </widget>
    <widget class="QLabel" name="_l5">
     <property name="geometry">
@@ -254,7 +269,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>594</width>
+     <width>515</width>
      <height>22</height>
     </rect>
    </property>

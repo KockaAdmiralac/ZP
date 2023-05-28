@@ -63,6 +63,9 @@ class PrivateKeyRing(Base):
         instance = session.query(cls).filter_by(key_id=key_id).first()
         return instance
 
+    def __str__(self):
+        return f'{self.name} <{self.user_id}>'
+
 class PublicKeyRing(Base):
     __tablename__ = 'public_key_ring'
 
@@ -114,3 +117,6 @@ class PublicKeyRing(Base):
     def get_by_key_id(cls, key_id) -> 'PublicKeyRing':
         instance = session.query(cls).filter_by(key_id=key_id).first()
         return instance
+
+    def __str__(self):
+        return f'{self.name} <{self.user_id}>'

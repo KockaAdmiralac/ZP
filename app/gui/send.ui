@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>394</width>
-    <height>334</height>
+    <width>469</width>
+    <height>373</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,8 +16,8 @@
   <widget class="QDialogButtonBox" name="buttonBox">
    <property name="geometry">
     <rect>
-     <x>50</x>
-     <y>300</y>
+     <x>110</x>
+     <y>330</y>
      <width>341</width>
      <height>32</height>
     </rect>
@@ -60,7 +60,7 @@
     <rect>
      <x>280</x>
      <y>260</y>
-     <width>72</width>
+     <width>171</width>
      <height>25</height>
     </rect>
    </property>
@@ -119,7 +119,7 @@
     <rect>
      <x>10</x>
      <y>40</y>
-     <width>381</width>
+     <width>451</width>
      <height>151</height>
     </rect>
    </property>
@@ -142,7 +142,7 @@
     <rect>
      <x>280</x>
      <y>200</y>
-     <width>72</width>
+     <width>171</width>
      <height>25</height>
     </rect>
    </property>
@@ -175,7 +175,7 @@
     <rect>
      <x>280</x>
      <y>230</y>
-     <width>72</width>
+     <width>171</width>
      <height>25</height>
     </rect>
    </property>
@@ -201,6 +201,32 @@
    </property>
    <property name="text">
     <string>Encryption algorithm:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="_l5">
+   <property name="geometry">
+    <rect>
+     <x>150</x>
+     <y>290</y>
+     <width>121</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Signing passphrase:</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="tbPassphrase">
+   <property name="geometry">
+    <rect>
+     <x>282</x>
+     <y>290</y>
+     <width>171</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="echoMode">
+    <enum>QLineEdit::Password</enum>
    </property>
   </widget>
  </widget>

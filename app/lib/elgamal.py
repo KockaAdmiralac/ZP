@@ -60,20 +60,25 @@ class ElGamalKey(object):
         # Generate public key y
         self.y: Integer = pow(self.g, self.x, self.p)
 
-    def encrypt(self, plaintext: bytes) -> tuple:
+    def encrypt(self, plaintext: bytes) -> bytes:
         M = bytes_to_long(plaintext)
         K = bytes_to_long(urandom(len(plaintext)))
         a = pow(self.g, K, self.p)
         b = (pow(self.y, K, self.p) * M) % self.p
-        return (int(a), int(b))
+        return long_to_bytes(a) + long_to_bytes(b)
 
-    def decrypt(self, ciphertext: tuple) -> bytes:
+    def decrypt(self, ciphertext: bytes) -> bytes:
+        size_in_bytes = self.size_in_bits() // 8
+        a_bytes = ciphertext[:size_in_bytes]
+        b_bytes = ciphertext[size_in_bytes:]
+        a = bytes_to_long(a_bytes)
+        b = bytes_to_long(b_bytes)
         if self.x is None:
             raise ValueError('ElGamal decryption with public key is not supported.')
         r = Integer.random_range(min_inclusive=2, max_exclusive=self.p-1)
-        a_blind = (pow(self.g, r, self.p) * ciphertext[0]) % self.p
+        a_blind = (pow(self.g, r, self.p) * a) % self.p
         ax = pow(a_blind, self.x, self.p)
-        plaintext_blind = (ax.inverse(self.p) * ciphertext[1] ) % self.p
+        plaintext_blind = (ax.inverse(self.p) * b) % self.p
         plaintext = (plaintext_blind * pow(self.y, r, self.p)) % self.p
         return long_to_bytes(int(plaintext))
 
@@ -114,6 +119,9 @@ class ElGamalKey(object):
 
     def public_key(self) -> ElGamalKey:
         return ElGamalKey(params=(self.p, self.g, self.y), is_public=True)
+
+    def size_in_bits(self) -> int:
+        return self.p.size_in_bits()
 
 # http://oid-info.com/get/1.3.14.7.2.1.1
 oid = '1.3.14.7.2.1.1'

@@ -1,8 +1,9 @@
 from sys import path
-from typing import Optional
+from typing import Optional, Tuple
 from PyQt6.QtWidgets import QDialog, QFileDialog, QMainWindow, QMessageBox, QTableWidgetItem
 from PyQt6 import QtCore, QtGui, QtWidgets
-from lib import Key, KeyAlgorithms
+from lib.mail import Message
+from lib import Cipher, Key, KeyAlgorithms
 from lib.pem import import_key, export_key
 from lib.manage import create_key_pair, delete_key_pair, get_all_keys_from_private_keyring, \
     get_all_keys_from_public_keyring, insert_imported_key
@@ -21,8 +22,8 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         super().__init__(parent)
         self.setupUi(self)
         self.connect()
-        self.boundary_index = 0
-        self.view_keys_dict = {}
+        self.boundaryIndex = 0
+        self.viewKeysDict = {}
         self.passphrase = None
         self.name = None
         self.email = None
@@ -47,7 +48,7 @@ class ZPApp(QMainWindow, Ui_MainWindow):
             return index
         return -1
     
-    def _set_key_fields(self, name="", email="", timestamp="", key_id="", algorithm=""):
+    def setKeyFields(self, name='', email='', timestamp='', key_id='', algorithm=''):
         self.tbKeyName.setText(name)
         self.tbKeyEmail.setText(email)
         self.tbCreatedAt.setText(timestamp)
@@ -57,9 +58,8 @@ class ZPApp(QMainWindow, Ui_MainWindow):
     def onKeySelected(self):
         index = self.findSelectedKey()
         if index != -1:
-            self.statusbar.showMessage(f"The selected key is at row {index}.")
-            key = self.view_keys_dict[index]
-            self._set_key_fields(name=key.name, email=key.user_id, timestamp=str(key.timestamp), \
+            key = self.viewKeysDict[index]
+            self.setKeyFields(name=key.name, email=key.user_id, timestamp=str(key.timestamp), \
                                  key_id=key.key_id, algorithm=key.algorithm)
 
     def newKeyPair(self):
@@ -71,10 +71,10 @@ class ZPApp(QMainWindow, Ui_MainWindow):
     def deleteKeyPair(self):
         index = self.findSelectedKey()
         if index != -1:
-            key = self.view_keys_dict[index]
+            key = self.viewKeysDict[index]
             delete_key_pair(key_id=key.key_id)
-            message = f'Deleted key pair {key.name}<{key.user_id}>.'
-            self._set_key_fields()
+            message = f'Deleted key pair {key}.'
+            self.setKeyFields()
         else:
             message = 'No key selected.'
         self.statusbar.showMessage(message, 3000)
@@ -95,7 +95,7 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         except Exception as error:
             self.showError('An error occurred while creating a key pair.', error)
 
-    def _create_list_item(self, text: str, font = False, flags = False):
+    def createListItem(self, text: str, font = False, flags = False):
         item = QtWidgets.QListWidgetItem()
         if font:
             font = QtGui.QFont()
@@ -108,23 +108,23 @@ class ZPApp(QMainWindow, Ui_MainWindow):
 
     def populateKeyrings(self):
         self.keyList.clear()
-        self._create_list_item("Public keyring", font=True, flags=True)
-        self.view_keys_dict.clear()
+        self.createListItem('Public keyring', font=True, flags=True)
+        self.viewKeysDict.clear()
         index = 1
         public_keyring_keys = get_all_keys_from_public_keyring()
         for key in public_keyring_keys:
-            self._create_list_item(text=f"    {key.name} <{key.user_id}>")
-            self.view_keys_dict[index] = key
+            self.createListItem(text=f'    {key}')
+            self.viewKeysDict[index] = key
             index += 1
 
-        self.boundary_index = index
-        self._create_list_item(text="--------------------------------------", flags=True)
-        self._create_list_item("Private keyring", font=True, flags=True)
+        self.boundaryIndex = index
+        self.createListItem(text='--------------------------------------', flags=True)
+        self.createListItem('Private keyring', font=True, flags=True)
         index += 2
         private_keyring_keys = get_all_keys_from_private_keyring()
         for key in private_keyring_keys:
-            self._create_list_item(text=f"    {key.name} <{key.user_id}>")
-            self.view_keys_dict[index] = key
+            self.createListItem(text=f'    {key}')
+            self.viewKeysDict[index] = key
             index += 1
 
     def importKeyPair(self):
@@ -132,7 +132,7 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         if pemFilename == '':
             return
         passphrase, name, email = self.enterOtherKeyAttributes()
-        if passphrase is None:
+        if passphrase is None or name is None or email is None:
             self.statusbar.showMessage(f'User canceled import dialog.', 3000)
             return
         key = import_key(pemFilename, None if passphrase == '' else passphrase)
@@ -148,14 +148,14 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         pemFilename, _ = QFileDialog.getSaveFileName(self, 'Select the location for your exported keys', filter='PEM files (*.pem)')
         if pemFilename == '':
             return
-        if index > self.boundary_index: # we selected a private key
+        if index > self.boundaryIndex: # we selected a private key
             passphrase = self.enterPassphrase()
             if passphrase is None:
                 self.statusbar.showMessage(f'User canceled export dialog.', 3000)
                 return
         else:
             passphrase = ''
-        key = self.view_keys_dict[index]
+        key = self.viewKeysDict[index]
         try:
             if passphrase == '':
                 export_key(pemFilename, key.get_public_key_obj())
@@ -167,8 +167,11 @@ class ZPApp(QMainWindow, Ui_MainWindow):
             self.showError('Exporting key failed. Check whether the passphrase you entered is correct.', error)
 
     def sendMessage(self):
-        dialog = SendMessageDialog(self)
-        dialog.exec()
+        try:
+            dialog = SendMessageDialog(self)
+            dialog.exec()
+        except Exception as error:
+            self.showError('Sending message failed. Check whether the passphrase you entered is correct.', error)
 
     def receiveMessage(self):
         pass
@@ -199,7 +202,7 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         if self.passphraseDialog is not None:
             self.passphrase = self.passphraseDialog.tbPassphrase.text()
 
-    def enterOtherKeyAttributes(self) -> Optional[str]:
+    def enterOtherKeyAttributes(self) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         self.otherKeyAttributesDialog = OtherKeyAttributesDialog()
         self.otherKeyAttributesDialog.accepted.connect(self.enteredOtherKeyAttributes)
         self.otherKeyAttributesDialog.exec()
@@ -220,6 +223,50 @@ class SendMessageDialog(QDialog, Ui_SendMessageDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
+        self.accepted.connect(self.sendMessage)
+        self.publicKeys = get_all_keys_from_public_keyring()
+        self.privateKeys = get_all_keys_from_private_keyring()
+        self.comboEncryptionKey.clear()
+        self.comboSigningKey.clear()
+        if len(self.publicKeys) == 0:
+            self.checkEncrypt.setCheckable(False)
+        else:
+            self.comboEncryptionKey.addItems([str(key) for key in self.publicKeys])
+        if len(self.privateKeys) == 0:
+            self.checkSign.setCheckable(False)
+            self.tbPassphrase.setReadOnly(True)
+        else:
+            self.comboSigningKey.addItems([str(key) for key in self.privateKeys])
+
+    def sendMessage(self):
+        messageFilename, _ = QFileDialog.getSaveFileName(self, 'Select the location for your message', filter='MSG files (*.msg)')
+        if messageFilename == '':
+            return
+        doEncrypt = self.checkEncrypt.isChecked()
+        doSign = self.checkSign.isChecked()
+        doCompress = self.checkCompress.isChecked()
+        doBase64 = self.checkBase64.isChecked()
+        message = self.tbMessage.toPlainText()
+        publicKey = None
+        publicKeyId = None
+        privateKey = None
+        privateKeyId = None
+        cipher = [Cipher.AES128, Cipher.TripleDES][self.comboEncryptionAlgorithm.currentIndex()]
+        if doEncrypt:
+            publicKeyIndex = self.comboEncryptionKey.currentIndex()
+            publicKeyData = self.publicKeys[publicKeyIndex]
+            publicKey = publicKeyData.get_public_key_obj()
+            publicKeyId = str(publicKeyData.key_id)
+        if doSign:
+            privateKeyIndex = self.comboSigningKey.currentIndex()
+            privateKeyPassphrase = self.tbPassphrase.text()
+            privateKeyData = self.privateKeys[privateKeyIndex]
+            privateKey = privateKeyData.get_private_key_obj(privateKeyPassphrase)
+            privateKeyId = str(privateKeyData.key_id)
+        msg = Message(message, doCompress, doBase64, publicKey, publicKeyId, cipher, privateKey, privateKeyId)
+        msg.write(messageFilename)
+        # TODO:
+        print(Message.read(messageFilename, '123'))
 
 class NewKeyPairDialog(QDialog, Ui_NewKeyPairDialog):
     def __init__(self, parent=None):
