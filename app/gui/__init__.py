@@ -2,6 +2,7 @@ from sys import path
 from typing import Optional, Tuple
 from PyQt6.QtWidgets import QDialog, QFileDialog, QMainWindow, QMessageBox, QTableWidgetItem
 from PyQt6 import QtCore, QtGui, QtWidgets
+from lib.models import PrivateKeyRing, PublicKeyRing
 from lib.mail import Message
 from lib import Cipher, Key, KeyAlgorithms
 from lib.pem import import_key, export_key
@@ -14,6 +15,7 @@ from .main import Ui_MainWindow
 from .passphrase import Ui_PassphraseDialog
 from .send import Ui_SendMessageDialog
 from .importkey import Ui_ImportDialog
+from .receive import Ui_ReceiveDialog
 
 path.append('..')
 
@@ -88,6 +90,9 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         algorithm = [KeyAlgorithms.RSA, KeyAlgorithms.DSAElGamal][self.keypairDialog.comboAlgorithm.currentIndex()]
         size = [1024, 2048][self.keypairDialog.comboSize.currentIndex()]
         password = self.keypairDialog.tbPassword.text()
+        if password is None or password == '':
+            self.statusbar.showMessage(f'Please enter a password when creating a new key.', 3000)
+            return
         try:
             create_key_pair(name, email, algorithm, size, password)
             self.statusbar.showMessage(f'Created new key pair for {name} <{email}>', 3000)
@@ -177,11 +182,22 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         messageFilename, _ = QFileDialog.getOpenFileName(self, 'Select MSG file to import', filter='MSG files (*.msg)')
         if messageFilename == '':
             return
-        passphrase = self.enterPassphrase()
-        if passphrase is None:
-            self.statusbar.showMessage(f'User passphrase dialog for receive message.', 3000)
-            return
-        print(Message.read(filename=messageFilename, passphrase=passphrase))
+        receivedMessage: Message = Message.read(filename=messageFilename, read_passphrase=self.enterPassphrase)
+        dialog = ReceiveMessageDialog()
+        dialog.tbMessage.setText(receivedMessage.message)
+        # checboxes
+        dialog.checkBase64ed.setChecked(receivedMessage.base64)
+        dialog.checkCompressed.setChecked(receivedMessage.compress)
+        dialog.checkEncrypted.setChecked(True if receivedMessage.encryption_key else False)  
+        dialog.checkSigned.setChecked(True if receivedMessage.signing_key else False)
+        # line edits
+        encryptionKey = PublicKeyRing.get_by_key_id(receivedMessage.encryption_key_id)  # TODO ??
+        signingKey = PrivateKeyRing.get_by_key_id(receivedMessage.signing_key_id)
+        dialog.tbEncryptionKey.setText(str(encryptionKey) if encryptionKey else '')
+        dialog.tbSigningKey.setText(str(signingKey) if signingKey else '')
+        dialog.tbEncryptionAlg.setText('AES128' if receivedMessage.cipher == Cipher.AES128 else 'Triple DES')
+        dialog.tbVerification.setText('SUCCESSFUL' if receivedMessage.verification else 'UNSUCCESSFUL')
+        dialog.exec()
 
     def closeEvent(self, a0) -> None:
         session = Session()
@@ -288,4 +304,11 @@ class OtherKeyAttributesDialog(QDialog, Ui_ImportDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setupUi(self)
+
+class ReceiveMessageDialog(QDialog, Ui_ReceiveDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setupUi(self)
+
+
     

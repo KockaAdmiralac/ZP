@@ -9,13 +9,13 @@ from Crypto.Random import get_random_bytes
 from Crypto.Signature import DSS, pss
 from lib import Cipher, ElGamalKey, EncryptionKey, Key, SigningKey
 from lib.models import PrivateKeyRing, PublicKeyRing
-from typing import Dict, Optional, Tuple, Union
+from typing import Callable, Dict, Optional, Tuple, Union
 from zlib import compress, decompress
 
 MessageHeaders = Dict[str, Optional[str]]
 
 class Message:
-    def __init__(self, message: str, compress: bool, base64: bool, public_key: Optional[Key], public_key_id: Optional[str], cipher: Optional[Cipher], private_key: Optional[Key], private_key_id: Optional[str], verification: Optional[bool]):
+    def __init__(self, message: str, compress: bool, base64: bool, public_key: Optional[Key], public_key_id: Optional[str], cipher: Optional[Cipher], private_key: Optional[Key], private_key_id: Optional[str], verification: Optional[bool] = True):
         self.message: str = message
         self.compress: bool = compress
         self.base64: bool = base64
@@ -175,7 +175,7 @@ class Message:
             file.write(encoded_message)
 
     @staticmethod
-    def read(filename: str, passphrase: Optional[str] = None) -> 'Message':
+    def read(filename: str, read_passphrase: Callable[[], str]) -> 'Message':
         with open(filename, 'rb') as file:
             headers = Message.read_headers(file)
             encryption_key_id = headers.get('Encryption-Key-Id')
@@ -184,7 +184,11 @@ class Message:
             is_signed = headers.get('Signed') == 'True'
             is_compressed = headers.get('Compressed') == 'True'
             is_base64 = headers.get('Radix-64') == 'True'
-            verification = False
+            # default values for Message constructor
+            verification = True
+            signing_key = None
+            signing_key_id = None
+            encryption_key = None
             # Base64 decoding
             if is_base64:
                 decoded_message = b64decode(file.read())
@@ -194,6 +198,8 @@ class Message:
                 encryption_key_data = PrivateKeyRing.get_by_key_id(encryption_key_id)
                 if encryption_key_data is None:
                     raise ValueError('No private key with given ID found.')
+                # enter passphrase
+                passphrase = read_passphrase()
                 if passphrase is None:
                     raise ValueError('Decryption requested but no private key passphrase given.')
                 encryption_key_pair = encryption_key_data.get_private_key_obj(passphrase)

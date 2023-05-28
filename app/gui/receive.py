@@ -23,6 +23,7 @@ class Ui_ReceiveDialog(object):
         self._l1.setObjectName("_l1")
         self.tbMessage = QtWidgets.QTextEdit(parent=ReceiveDialog)
         self.tbMessage.setGeometry(QtCore.QRect(10, 30, 451, 151))
+        self.tbMessage.setReadOnly(True)
         self.tbMessage.setObjectName("tbMessage")
         self.checkCompressed = QtWidgets.QCheckBox(parent=ReceiveDialog)
         self.checkCompressed.setGeometry(QtCore.QRect(10, 230, 91, 23))

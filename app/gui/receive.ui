@@ -51,6 +51,9 @@
      <height>151</height>
     </rect>
    </property>
+   <property name="readOnly">
+    <bool>true</bool>
+   </property>
   </widget>
   <widget class="QCheckBox" name="checkCompressed">
    <property name="geometry">
