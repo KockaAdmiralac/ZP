@@ -12,9 +12,9 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_ReceiveDialog(object):
     def setupUi(self, ReceiveDialog):
         ReceiveDialog.setObjectName("ReceiveDialog")
-        ReceiveDialog.resize(474, 389)
+        ReceiveDialog.resize(474, 416)
         self.buttonBox = QtWidgets.QDialogButtonBox(parent=ReceiveDialog)
-        self.buttonBox.setGeometry(QtCore.QRect(120, 350, 341, 32))
+        self.buttonBox.setGeometry(QtCore.QRect(120, 370, 341, 32))
         self.buttonBox.setOrientation(QtCore.Qt.Orientation.Horizontal)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.StandardButton.Cancel|QtWidgets.QDialogButtonBox.StandardButton.Ok)
         self.buttonBox.setObjectName("buttonBox")
@@ -69,6 +69,13 @@ class Ui_ReceiveDialog(object):
         self.tbVerification.setGeometry(QtCore.QRect(290, 280, 171, 25))
         self.tbVerification.setReadOnly(True)
         self.tbVerification.setObjectName("tbVerification")
+        self.tbTimestamp = QtWidgets.QLineEdit(parent=ReceiveDialog)
+        self.tbTimestamp.setGeometry(QtCore.QRect(290, 310, 171, 25))
+        self.tbTimestamp.setReadOnly(True)
+        self.tbTimestamp.setObjectName("tbTimestamp")
+        self._l6 = QtWidgets.QLabel(parent=ReceiveDialog)
+        self._l6.setGeometry(QtCore.QRect(160, 310, 121, 20))
+        self._l6.setObjectName("_l6")
 
         self.retranslateUi(ReceiveDialog)
         self.buttonBox.accepted.connect(ReceiveDialog.accept) # type: ignore
@@ -87,6 +94,7 @@ class Ui_ReceiveDialog(object):
         self._l3.setText(_translate("ReceiveDialog", "Encryption key:"))
         self._l4.setText(_translate("ReceiveDialog", "Encryption algorithm:"))
         self._l5.setText(_translate("ReceiveDialog", "Verification status:"))
+        self._l6.setText(_translate("ReceiveDialog", "Timestamp:"))
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ $ git clone https://github.com/KockaAdmiralac/ZP.git
 $ cd ZP
 $ python -m venv venv
 $ source venv/bin/activate
+$ or venv\Scripts\activate on Windows
 $ pip install -r requirements.txt
 $ python app/main.py
 ```
@@ -14,3 +15,4 @@ Svi podaci aplikacije čuvaju se unutar `keyring.db`.
 
 ## Razvijanje
 Projekat koristi [Qt Designer](https://doc.qt.io/qt-6/qtdesigner-manual.html) za svoj grafički korisnički interfejs. Ukoliko menjate bilo koji od `*.ui` fajlova iz `gui` paketa, neophodno je regenerisati odgovarajuće Python fajlove pokretanjem `app/gui/generate.sh` skripte.
+Za pokretanje Qt Designer tool, pokrenuti skriptu iz `venv/Lib/site-packages/qt6-applications/Qt/bin/designer`.

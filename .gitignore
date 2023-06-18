@@ -3,3 +3,5 @@ __pycache__
 keyring*.db
 keyring*.sqbpro
 .DS_STORE
+**/*.pem
+**/*.msg

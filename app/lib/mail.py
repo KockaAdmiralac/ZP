@@ -246,4 +246,4 @@ class Message:
             print(timestamp, message, verification)
             return_message = Message(message=message, compress=is_compressed, base64=is_base64, public_key=encryption_key, public_key_id=encryption_key_id, \
                                  cipher=cipher, private_key=signing_key, private_key_id=signing_key_id, verification=verification) 
-            return return_message
+            return return_message, timestamp

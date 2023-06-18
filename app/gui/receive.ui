@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>474</width>
-    <height>389</height>
+    <height>416</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>120</x>
-     <y>350</y>
+     <y>370</y>
      <width>341</width>
      <height>32</height>
     </rect>
@@ -221,6 +221,32 @@
    </property>
    <property name="readOnly">
     <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="tbTimestamp">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>310</y>
+     <width>171</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="readOnly">
+    <bool>true</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="_l6">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>310</y>
+     <width>121</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Timestamp:</string>
    </property>
   </widget>
  </widget>

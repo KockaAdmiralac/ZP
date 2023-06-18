@@ -11,6 +11,7 @@ from Crypto.Util.py3compat import tobytes, tostr
 # Adapted from pycryptodome's ElGamal key class, while re-adding support for
 # ElGamal encryption from pycrypto and defining our own PEM export
 # procedure (based on DSA export to PEM from pycryptodome).
+# source: https://github.com/Legrandin/pycryptodome/blob/master/lib/Crypto/PublicKey/ElGamal.py
 class ElGamalKey(object):
     def __init__(self, bits=1024, fast=True, params: Optional[Tuple[int, int, int]]=None, is_public=False):
         if params is not None:

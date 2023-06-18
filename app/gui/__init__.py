@@ -1,3 +1,4 @@
+from datetime import datetime
 from sys import path
 from typing import Optional, Tuple
 from PyQt6.QtWidgets import QDialog, QFileDialog, QMainWindow, QMessageBox, QTableWidgetItem
@@ -140,10 +141,13 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         if passphrase is None or name is None or email is None:
             self.statusbar.showMessage(f'User canceled import dialog.', 3000)
             return
-        key = import_key(pemFilename, None if passphrase == '' else passphrase)
-        insert_imported_key(key=key, name=name, email=email, passphrase=passphrase)
-        self.statusbar.showMessage(f'Imported key pair from {pemFilename}', 3000)
-        self.populateKeyrings()
+        try: 
+            key = import_key(pemFilename, None if passphrase == '' else passphrase)
+            insert_imported_key(key=key, name=name, email=email, passphrase=passphrase)
+            self.statusbar.showMessage(f'Imported key pair from {pemFilename}', 3000)
+            self.populateKeyrings()
+        except Exception as error:
+            self.showError('Importing key failed. Check whether the passphrase you entered is correct.', error)
 
     def exportKeyPair(self):
         index = self.findSelectedKey()
@@ -182,7 +186,7 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         messageFilename, _ = QFileDialog.getOpenFileName(self, 'Select MSG file to import', filter='MSG files (*.msg)')
         if messageFilename == '':
             return
-        receivedMessage: Message = Message.read(filename=messageFilename, read_passphrase=self.enterPassphrase)
+        receivedMessage, timestamp = Message.read(filename=messageFilename, read_passphrase=self.enterPassphrase)
         dialog = ReceiveMessageDialog()
         dialog.tbMessage.setText(receivedMessage.message)
         # checboxes
@@ -191,12 +195,17 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         dialog.checkEncrypted.setChecked(True if receivedMessage.encryption_key else False)  
         dialog.checkSigned.setChecked(True if receivedMessage.signing_key else False)
         # line edits
-        encryptionKey = PublicKeyRing.get_by_key_id(receivedMessage.encryption_key_id)  # TODO ??
+        encryptionKey = PublicKeyRing.get_by_key_id(receivedMessage.encryption_key_id)
         signingKey = PrivateKeyRing.get_by_key_id(receivedMessage.signing_key_id)
-        dialog.tbEncryptionKey.setText(str(encryptionKey) if encryptionKey else '')
         dialog.tbSigningKey.setText(str(signingKey) if signingKey else '')
-        dialog.tbEncryptionAlg.setText('AES128' if receivedMessage.cipher == Cipher.AES128 else 'Triple DES')
+        if encryptionKey:
+            dialog.tbEncryptionKey.setText(str(encryptionKey))
+            dialog.tbEncryptionAlg.setText('AES128' if receivedMessage.cipher == Cipher.AES128 else 'Triple DES')
+        else:
+            dialog.tbEncryptionKey.setText('')
+            dialog.tbEncryptionAlg.setText('')
         dialog.tbVerification.setText('SUCCESSFUL' if receivedMessage.verification else 'UNSUCCESSFUL')
+        dialog.tbTimestamp.setText(timestamp[:19].replace('T', ' '))
         dialog.exec()
 
     def closeEvent(self, a0) -> None:
@@ -209,6 +218,7 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         errorMsg.setIcon(QMessageBox.Icon.Critical)
         errorMsg.setWindowTitle('Error')
         errorMsg.setText(message)
+        # errorMsg.setInformativeText(''.join(format_exception(None, error, None)))
         errorMsg.setInformativeText(''.join(format_exception(error)))
         errorMsg.exec()
 
