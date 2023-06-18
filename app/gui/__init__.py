@@ -196,7 +196,7 @@ class ZPApp(QMainWindow, Ui_MainWindow):
         dialog.checkSigned.setChecked(True if receivedMessage.signing_key else False)
         # line edits
         encryptionKey = PublicKeyRing.get_by_key_id(receivedMessage.encryption_key_id)
-        signingKey = PrivateKeyRing.get_by_key_id(receivedMessage.signing_key_id)
+        signingKey = PublicKeyRing.get_by_key_id(receivedMessage.signing_key_id)
         dialog.tbSigningKey.setText(str(signingKey) if signingKey else '')
         if encryptionKey:
             dialog.tbEncryptionKey.setText(str(encryptionKey))

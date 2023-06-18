@@ -4,7 +4,7 @@ from io import BufferedReader, BytesIO
 from Crypto.Cipher import AES, DES3, PKCS1_OAEP
 from Crypto.Cipher._mode_eax import EaxMode
 from Crypto.Hash import SHA1
-from Crypto.PublicKey import RSA
+from Crypto.PublicKey import DSA, RSA
 from Crypto.Random import get_random_bytes
 from Crypto.Signature import DSS, pss
 from lib import Cipher, ElGamalKey, EncryptionKey, Key, SigningKey
@@ -27,10 +27,14 @@ class Message:
         if public_key is not None:
             if isinstance(public_key, RSA.RsaKey):
                 self.encryption_key = public_key
+            elif isinstance(public_key, ElGamalKey):
+                self.encryption_key = public_key
             else:
                 self.encryption_key = public_key[1]
         if private_key is not None:
             if isinstance(private_key, RSA.RsaKey):
+                self.signing_key = private_key
+            elif isinstance(private_key, DSA.DsaKey):
                 self.signing_key = private_key
             else:
                 self.signing_key = private_key[0]
@@ -175,7 +179,7 @@ class Message:
             file.write(encoded_message)
 
     @staticmethod
-    def read(filename: str, read_passphrase: Callable[[], str]) -> 'Message':
+    def read(filename: str, read_passphrase: Callable[[], str]) -> Tuple['Message', str]:
         with open(filename, 'rb') as file:
             headers = Message.read_headers(file)
             encryption_key_id = headers.get('Encryption-Key-Id')
